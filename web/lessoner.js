@@ -1,9 +1,9 @@
 /*
-	Captionator 0.5.1 [CaptionCrunch]
+	lessonator 0.5.1 [CaptionCrunch]
 	Christopher Giffard, 2011
 	Share and enjoy
 
-	https://github.com/cgiffard/Captionator
+	https://github.com/cgiffard/lessonator
 */
 /*global HTMLVideoElement: true, NodeList: true, Audio: true, HTMLElement: true, document:true, window:true, XMLHttpRequest:true, navigator:true */
 /*jshint strict:true */
@@ -20,7 +20,7 @@
 	var cueBackgroundColour	= [0,0,0,0.5];	//	R,G,B,A
 	var objectsCreated = false;				//	We don't want to create objects twice, or instanceof won't work
 	
-	var captionator = {
+	var lessonator = {
 		/*
 			Subclassing DOMException so we can reliably throw it without browser intervention. This is quite hacky. See SO post:
 			http://stackoverflow.com/questions/5136727/manually-artificially-throwing-a-domexception-with-javascript
@@ -40,7 +40,7 @@
 			}
 		},
 		/*
-			captionator.compareArray(array1, array2)
+			lessonator.compareArray(array1, array2)
 		
 			Rough and ready array comparison function we can use to easily determine
 			whether cues have changed or not.
@@ -71,9 +71,9 @@
 			return true;
 		},
 		/*
-			captionator.generateID([number ID length])
+			lessonator.generateID([number ID length])
 		
-			Generates a randomised string prefixed with the word captionator. This function is used internally to keep track of
+			Generates a randomised string prefixed with the word lessonator. This function is used internally to keep track of
 			objects and nodes in the DOM.
 		
 			First parameter: A number of random characters/numbers to generate. This defaults to 10.
@@ -90,10 +90,10 @@
 				idComposite += String.fromCharCode(65 + Math.floor(Math.random()*26));
 			}
 		
-			return "captionator" + idComposite;
+			return "lessonator" + idComposite;
 		},
 		/*
-			captionator.captionify([selector string array | DOMElement array | selector string | singular dom element ],
+			lessonator.captionify([selector string array | DOMElement array | selector string | singular dom element ],
 									[defaultLanguage - string in BCP47],
 									[options - JS Object])
 		
@@ -146,34 +146,29 @@
 			if (!HTMLVideoElement) {
 				// Browser doesn't support HTML5 video - die here.
 				return false;
-			} else {
-				// Browser supports native track API
-				if (typeof(document.createElement("video").addTextTrack) === "function") {
-					return false;
-				}
 			}
-			
+
 			if (!objectsCreated) {
 				// Set up objects & types
 				// As defined by http://www.whatwg.org/specs/web-apps/current-work/multipage/video.html
 				/**
 				 * @constructor
 				 */
-				captionator.TextTrack = function TextTrack(id,kind,label,language,trackSource,isDefault) {
+				lessonator.TextTrack = function TextTrack(id,kind,label,language,trackSource,isDefault) {
 				
 					this.onload = function () {};
 					this.onerror = function() {};
 					this.oncuechange = function() {};
 				
 					this.id = id || "";
-					this.internalMode = captionator.TextTrack.OFF;
-					this.cues = new captionator.TextTrackCueList(this);
-					this.activeCues = new captionator.ActiveTextTrackCueList(this.cues,this);
+					this.internalMode = lessonator.TextTrack.OFF;
+					this.cues = new lessonator.TextTrackCueList(this);
+					this.activeCues = new lessonator.ActiveTextTrackCueList(this.cues,this);
 					this.kind = kind || "subtitles";
 					this.label = label || "";
 					this.language = language || "";
 					this.src = trackSource || "";
-					this.readyState = captionator.TextTrack.NONE;
+					this.readyState = lessonator.TextTrack.NONE;
 					this.internalDefault = isDefault || false;
 				
 					// Create getters and setters for mode
@@ -182,23 +177,23 @@
 					};
 				
 					this.setMode = function(value) {
-						var allowedModes = [captionator.TextTrack.OFF,captionator.TextTrack.HIDDEN,captionator.TextTrack.SHOWING], containerID, container;
+						var allowedModes = [lessonator.TextTrack.OFF,lessonator.TextTrack.HIDDEN,lessonator.TextTrack.SHOWING], containerID, container;
 						if (allowedModes.indexOf(value) !== -1) {
 							if (value !== this.internalMode) {
 								this.internalMode = value;
 						
-								if (this.readyState === captionator.TextTrack.NONE && this.src.length > 0 && value > captionator.TextTrack.OFF) {
+								if (this.readyState === lessonator.TextTrack.NONE && this.src.length > 0 && value > lessonator.TextTrack.OFF) {
 									this.loadTrack(this.src,null);
 								}
 								
 								// Refresh all captions on video
-								this.videoNode._captionator_dirtyBit = true;
-								captionator.rebuildCaptions(this.videoNode);
+								this.videoNode._lessonator_dirtyBit = true;
+								lessonator.rebuildCaptions(this.videoNode);
 							
-								if (value === captionator.TextTrack.OFF) {
+								if (value === lessonator.TextTrack.OFF) {
 									// make sure the resource is reloaded next time (Is this correct behaviour?)
 									this.cues.length = 0; // Destroy existing cue data (bugfix)
-									this.readyState = captionator.TextTrack.NONE;
+									this.readyState = lessonator.TextTrack.NONE;
 								}
 							}
 						} else {
@@ -226,20 +221,20 @@
 				
 					this.loadTrack = function(source, callback) {
 						var captionData, ajaxObject = new XMLHttpRequest();
-						if (this.readyState === captionator.TextTrack.LOADED) {
+						if (this.readyState === lessonator.TextTrack.LOADED) {
 							if (callback instanceof Function) {
 								callback(captionData);
 							}
 						} else {
 							this.src = source;
-							this.readyState = captionator.TextTrack.LOADING;
+							this.readyState = lessonator.TextTrack.LOADING;
 						
 							var currentTrackElement = this;
 							ajaxObject.open('GET', source, true);
 							ajaxObject.onreadystatechange = function (eventData) {
 								if (ajaxObject.readyState === 4) {
 									if(ajaxObject.status === 200) {
-										var TrackProcessingOptions = currentTrackElement.videoNode._captionatorOptions || {};
+										var TrackProcessingOptions = currentTrackElement.videoNode._lessonatorOptions || {};
 										if (currentTrackElement.kind === "metadata") {
 											// People can load whatever data they please into metadata tracks.
 											// Don't process it.
@@ -247,12 +242,12 @@
 											TrackProcessingOptions.sanitiseCueHTML = false;
 										}
 										
-										captionData = captionator.parseCaptions(ajaxObject.responseText,TrackProcessingOptions);
-										currentTrackElement.readyState = captionator.TextTrack.LOADED;
+										captionData = lessonator.parseCaptions(ajaxObject.responseText,TrackProcessingOptions);
+										currentTrackElement.readyState = lessonator.TextTrack.LOADED;
 										currentTrackElement.cues.loadCues(captionData);
 										currentTrackElement.activeCues.refreshCues.apply(currentTrackElement.activeCues);
-										currentTrackElement.videoNode._captionator_dirtyBit = true;
-										captionator.rebuildCaptions(currentTrackElement.videoNode);
+										currentTrackElement.videoNode._lessonator_dirtyBit = true;
+										lessonator.rebuildCaptions(currentTrackElement.videoNode);
 										currentTrackElement.onload.call(this);
 									
 										if (callback instanceof Function) {
@@ -260,7 +255,7 @@
 										}
 									} else {
 										// Throw error handler, if defined
-										currentTrackElement.readyState = captionator.TextTrack.ERROR;
+										currentTrackElement.readyState = lessonator.TextTrack.ERROR;
 										currentTrackElement.onerror();
 									}
 								}
@@ -269,7 +264,7 @@
 								ajaxObject.send(null);
 							} catch(Error) {
 								// Throw error handler, if defined
-								currentTrackElement.readyState = captionator.TextTrack.ERROR;
+								currentTrackElement.readyState = lessonator.TextTrack.ERROR;
 								currentTrackElement.onerror(Error);
 							}
 						}
@@ -280,7 +275,7 @@
 					// Raises an exception if the argument is null, associated with another text track, or already in the list of cues.
 				
 					this.addCue = function(cue) {
-						if (cue && cue instanceof captionator.TextTrackCue) {
+						if (cue && cue instanceof lessonator.TextTrackCue) {
 							this.cues.addCue(cue);
 						} else {
 							throw new Error("The argument is null or not an instance of TextTrackCue.");
@@ -296,21 +291,21 @@
 					};
 				};
 				// Define constants for TextTrack.readyState
-				captionator.TextTrack.NONE = 0;
-				captionator.TextTrack.LOADING = 1;
-				captionator.TextTrack.LOADED = 2;
-				captionator.TextTrack.ERROR = 3;
+				lessonator.TextTrack.NONE = 0;
+				lessonator.TextTrack.LOADING = 1;
+				lessonator.TextTrack.LOADED = 2;
+				lessonator.TextTrack.ERROR = 3;
 				// Define constants for TextTrack.mode
-				captionator.TextTrack.OFF = 0;
-				captionator.TextTrack.HIDDEN = 1;
-				captionator.TextTrack.SHOWING = 2;
+				lessonator.TextTrack.OFF = 0;
+				lessonator.TextTrack.HIDDEN = 1;
+				lessonator.TextTrack.SHOWING = 2;
 			
 				// Define read-only properties
 				/**
 				 * @constructor
 				 */
-				captionator.TextTrackCueList = function TextTrackCueList(track) {
-					this.track = track instanceof captionator.TextTrack ? track : null;
+				lessonator.TextTrackCueList = function TextTrackCueList(track) {
+					this.track = track instanceof lessonator.TextTrack ? track : null;
 				
 					this.getCueById = function(cueID) {
 						return this.filter(function(currentCue) {
@@ -326,7 +321,7 @@
 					};
 
 					this.addCue = function(cue) {
-						if (cue && cue instanceof captionator.TextTrackCue) {
+						if (cue && cue instanceof lessonator.TextTrackCue) {
 							if (cue.track === this.track || !cue.track) {
 								// TODO: Check whether cue is already in list of cues.
 								// TODO: Sort cue list based on TextTrackCue.startTime.
@@ -343,12 +338,12 @@
 						return "[TextTrackCueList]";
 					};
 				};
-				captionator.TextTrackCueList.prototype = [];
+				lessonator.TextTrackCueList.prototype = [];
 			
 				/**
 				 * @constructor
 				 */
-				captionator.ActiveTextTrackCueList = function ActiveTextTrackCueList(textTrackCueList,textTrack) {
+				lessonator.ActiveTextTrackCueList = function ActiveTextTrackCueList(textTrackCueList,textTrack) {
 					// Among active cues:
 				
 					// The text track cues of a media element's text tracks are ordered relative to each
@@ -392,18 +387,18 @@
 				
 					this.refreshCues();
 				};
-				captionator.ActiveTextTrackCueList.prototype = new captionator.TextTrackCueList(null);
+				lessonator.ActiveTextTrackCueList.prototype = new lessonator.TextTrackCueList(null);
 			
 				/**
 				 * @constructor
 				 */
-				captionator.TextTrackCue = function TextTrackCue(id, startTime, endTime, text, settings, pauseOnExit, track) {
+				lessonator.TextTrackCue = function TextTrackCue(id, startTime, endTime, text, settings, pauseOnExit, track) {
 					// Set up internal data store
 					this.id = id;
-					this.track = track instanceof captionator.TextTrack ? track : null;
+					this.track = track instanceof lessonator.TextTrack ? track : null;
 					this.startTime = parseFloat(startTime);
 					this.endTime = parseFloat(endTime);
-					this.text = typeof(text) === "string" || text instanceof captionator.CaptionatorCueStructure ? text : "";
+					this.text = typeof(text) === "string" || text instanceof lessonator.lessonatorCueStructure ? text : "";
 					this.settings = typeof(settings) === "string" ? settings : "";
 					this.intSettings = {};
 					this.pauseOnExit = !!pauseOnExit;
@@ -473,7 +468,7 @@
 					this.getCueAsSource = function getCueAsSource() {
 						// Choosing the below line instead will mean that the raw, unprocessed source will be returned instead.
 						// Not really sure which is the correct behaviour.
-						// return this.text instanceof captionator.CaptionatorCueStructure? this.text.cueSource : this.text;
+						// return this.text instanceof lessonator.lessonatorCueStructure? this.text.cueSource : this.text;
 						return String(this.text);
 					};
 				
@@ -491,25 +486,26 @@
 				
 					this.isActive = function() {
 						var currentTime = 0;
-						if (this.track instanceof captionator.TextTrack) {
-							if ((this.track.mode === captionator.TextTrack.SHOWING || this.track.mode === captionator.TextTrack.HIDDEN) && this.track.readyState === captionator.TextTrack.LOADED) {
-								try {
-									currentTime = this.track.videoNode.currentTime;
-									
-									if (this.startTime <= currentTime && this.endTime >= currentTime) {
-										// Fire enter event if we were not active and now are
-										if (!this.wasActive) {
-											this.wasActive = true;
-											this.onenter();
-										}
+                        if (!(this.track instanceof lessonator.TextTrack)) {
+                        } else {
+                            if ((this.track.mode === lessonator.TextTrack.SHOWING || this.track.mode === lessonator.TextTrack.HIDDEN) && this.track.readyState === lessonator.TextTrack.LOADED) {
+                                try {
+                                    currentTime = this.track.videoNode.currentTime;
 
-										return true;
-									}
-								} catch(Error) {
-									return false;
-								}
-							}
-						}
+                                    if (this.startTime <= currentTime && this.endTime >= currentTime) {
+                                        // Fire enter event if we were not active and now are
+                                        if (!this.wasActive) {
+                                            this.wasActive = true;
+                                            this.onenter();
+                                        }
+
+                                        return true;
+                                    }
+                                } catch (Error) {
+                                    return false;
+                                }
+                            }
+                        }
 						
 						// Fire exit event if we were active and now are not
 						if (this.wasActive) {
@@ -537,13 +533,13 @@
 					this.onexit = function() {};
 				};
 			
-				//	Captionator media extensions
+				//	lessonator media extensions
 				/**
 				 * @constructor
 				 */
-				captionator.MediaTrack = function MediaTrack(id,kind,label,language,src,type,isDefault) {
+				lessonator.MediaTrack = function MediaTrack(id,kind,label,language,src,type,isDefault) {
 					// This function is under construction!
-					// Eventually, the idea is that captionator will support timed video and audio tracks in addition to text subtitles
+					// Eventually, the idea is that lessonator will support timed video and audio tracks in addition to text subtitles
 					
 					var getSupportedMediaSource = function(sources) {
 						//	Thanks Mr Pilgrim! :)
@@ -567,13 +563,13 @@
 					this.onerror = function() {};
 			
 					this.id = id || "";
-					this.internalMode = captionator.TextTrack.OFF;
-					this.internalMode = captionator.TextTrack.OFF;
+					this.internalMode = lessonator.TextTrack.OFF;
+					this.internalMode = lessonator.TextTrack.OFF;
 					this.mediaElement = null;
 					this.kind = kind || "audiodescription";
 					this.label = label || "";
 					this.language = language || "";
-					this.readyState = captionator.TextTrack.NONE;
+					this.readyState = lessonator.TextTrack.NONE;
 					this.type = type || "x/unknown"; //	MIME type
 					this.mediaType = null;
 					this.src = "";
@@ -596,19 +592,19 @@
 					};
 			
 					this.setMode = function(value) {
-						var allowedModes = [captionator.TextTrack.OFF,captionator.TextTrack.HIDDEN,captionator.TextTrack.SHOWING], containerID, container;
+						var allowedModes = [lessonator.TextTrack.OFF,lessonator.TextTrack.HIDDEN,lessonator.TextTrack.SHOWING], containerID, container;
 						if (allowedModes.indexOf(value) !== -1) {
 							if (value !== this.internalMode) {
 								this.internalMode = value;
-								if (value === captionator.TextTrack.HIDDEN && !this.mediaElement) {
+								if (value === lessonator.TextTrack.HIDDEN && !this.mediaElement) {
 									this.buildMediaElement();
 								}
 						
-								if (value === captionator.TextTrack.SHOWING) {
+								if (value === lessonator.TextTrack.SHOWING) {
 									this.showMediaElement();
 								}
 						
-								if (value === captionator.TextTrack.OFF || value === captionator.TextTrack.HIDDEN) {
+								if (value === lessonator.TextTrack.OFF || value === lessonator.TextTrack.HIDDEN) {
 									this.hideMediaElement();
 								}
 							}
@@ -657,8 +653,8 @@
 						try {
 							if (this.type.match(/^video\//)) {
 								this.mediaElement = document.createElement("video");
-								this.mediaElement.className = "captionator-mediaElement-" + this.kind;
-								captionator.styleNode(this.mediaElement,this.kind,this.videoNode);
+								this.mediaElement.className = "lessonator-mediaElement-" + this.kind;
+								lessonator.styleNode(this.mediaElement,this.kind,this.videoNode);
 						
 							} else if (this.type.match(/^audio\//)) {
 								this.mediaElement = new Audio();
@@ -668,28 +664,28 @@
 							this.mediaElement.src = this.src;
 							this.mediaElement.load();
 							this.mediaElement.trackObject = this;
-							this.readyState = captionator.TextTrack.LOADING;
+							this.readyState = lessonator.TextTrack.LOADING;
 							var mediaElement = this.mediaElement;
 					
 							this.mediaElement.addEventListener("progress",function(eventData) {
-								mediaElement.trackObject.readyState = captionator.TextTrack.LOADING;
+								mediaElement.trackObject.readyState = lessonator.TextTrack.LOADING;
 							},false);
 					
 							this.mediaElement.addEventListener("canplaythrough",function(eventData) {
-								mediaElement.trackObject.readyState = captionator.TextTrack.LOADED;
+								mediaElement.trackObject.readyState = lessonator.TextTrack.LOADED;
 								mediaElement.trackObject.onload.call(mediaElement.trackObject);
 							},false);
 					
 							this.mediaElement.addEventListener("error",function(eventData) {
-								mediaElement.trackObject.readyState = captionator.TextTrack.ERROR;
-								mediaElement.trackObject.mode = captionator.TextTrack.OFF;
+								mediaElement.trackObject.readyState = lessonator.TextTrack.ERROR;
+								mediaElement.trackObject.mode = lessonator.TextTrack.OFF;
 								mediaElement.trackObject.mediaElement = null;
 								mediaElement.trackObject.onerror.call(mediaElement.trackObject,eventData);
 							},false);
 					
 						} catch(Error) {
-							this.readyState = captionator.TextTrack.ERROR;
-							this.mode = captionator.TextTrack.OFF;
+							this.readyState = lessonator.TextTrack.ERROR;
+							this.mode = lessonator.TextTrack.OFF;
 							this.mediaElement = null;
 
 							if (this.onerror) {
@@ -699,11 +695,11 @@
 					};
 				};
 			
-				// Captionator internal cue structure object
+				// lessonator internal cue structure object
 				/**
 				 * @constructor
 				 */
-				captionator.CaptionatorCueStructure = function CaptionatorCueStructure(cueSource,options) {
+				lessonator.lessonatorCueStructure = function lessonatorCueStructure(cueSource,options) {
 					var cueStructureObject = this;
 					this.isTimeDependent = false;
 					this.cueSource = cueSource;
@@ -768,27 +764,27 @@
 						}
 					};
 				};
-				captionator.CaptionatorCueStructure.prototype = [];
+				lessonator.lessonatorCueStructure.prototype = [];
 			
 				// if requested by options, export the object types
 				if (options.exportObjects) {
-					window.TextTrack = captionator.TextTrack;
-					window.TextTrackCueList = captionator.TextTrackCueList;
-					window.ActiveTextTrackCueList = captionator.ActiveTextTrackCueList;
-					window.TextTrackCue = captionator.TextTrackCue;
-					window.MediaTrack = captionator.MediaTrack;
+					window.TextTrack = lessonator.TextTrack;
+					window.TextTrackCueList = lessonator.TextTrackCueList;
+					window.ActiveTextTrackCueList = lessonator.ActiveTextTrackCueList;
+					window.TextTrackCue = lessonator.TextTrackCue;
+					window.MediaTrack = lessonator.MediaTrack;
 				}
 
-				// Next time captionator.captionify() is called, the objects are already available to us.
+				// Next time lessonator.captionify() is called, the objects are already available to us.
 				objectsCreated = true;
 			}
 		
 			[].slice.call(document.getElementsByTagName("video"),0).forEach(function(videoElement) {
 				videoElement.addTextTrack = function(id,kind,label,language,src,type,isDefault) {
 					var allowedKinds = ["subtitles","captions","descriptions","captions","metadata","chapters", // WHATWG SPEC
-										"karaoke","lyrics","tickertext", // CAPTIONATOR TEXT EXTENSIONS
-										"audiodescription","commentary", // CAPTIONATOR AUDIO EXTENSIONS
-										"alternate","signlanguage"]; // CAPTIONATOR VIDEO EXTENSIONS
+										"karaoke","lyrics","tickertext", // lessonator TEXT EXTENSIONS
+										"audiodescription","commentary", // lessonator AUDIO EXTENSIONS
+										"alternate","signlanguage"]; // lessonator VIDEO EXTENSIONS
 				
 					var textKinds = allowedKinds.slice(0,7);
 					var newTrack;
@@ -801,13 +797,13 @@
 					if (!allowedKinds.filter(function (currentKind){
 							return kind === currentKind ? true : false;
 						}).length) {
-						throw captionator.createDOMException(12,"DOMException 12: SYNTAX_ERR: You must use a valid kind when creating a TimedTextTrack.","SYNTAX_ERR");
+						throw lessonator.createDOMException(12,"DOMException 12: SYNTAX_ERR: You must use a valid kind when creating a TimedTextTrack.","SYNTAX_ERR");
 					}
 
 					if (textKinds.filter(function (currentKind){
 							return kind === currentKind ? true : false;
 						}).length) {
-						newTrack = new captionator.TextTrack(id,kind,label,language,src,null);
+						newTrack = new lessonator.TextTrack(id,kind,label,language,src,null);
 						if (newTrack) {
 							if (!(videoElement.tracks instanceof Array)) {
 								videoElement.tracks = [];
@@ -819,7 +815,7 @@
 							return false;
 						}
 					} else {
-						newTrack = new captionator.MediaTrack(id,kind,label,language,src,type,isDefault);
+						newTrack = new lessonator.MediaTrack(id,kind,label,language,src,type,isDefault);
 						if (newTrack) {
 							if (!(videoElement.mediaTracks instanceof Array)) {
 								videoElement.mediaTracks = [];
@@ -855,7 +851,7 @@
 		
 			if (videoElements.length) {
 				for (elementIndex = 0; elementIndex < videoElements.length; elementIndex ++) {
-					captionator.processVideoElement(videoElements[elementIndex],defaultLanguage,options);
+					lessonator.processVideoElement(videoElements[elementIndex],defaultLanguage,options);
 				}
 				return true;
 			} else {
@@ -863,7 +859,7 @@
 			}
 		},
 		/*
-			captionator.processVideoElement(videoElement <HTMLVideoElement>,
+			lessonator.processVideoElement(videoElement <HTMLVideoElement>,
 									[defaultLanguage - string in BCP47],
 									[options - JS Object])
 		
@@ -890,13 +886,13 @@
 			options = options instanceof Object? options : {};
 		
 			if (!videoElement.captioned) {
-				videoElement._captionatorOptions = options;
+				videoElement._lessonatorOptions = options;
 				videoElement.className += (videoElement.className.length ? " " : "") + "captioned";
 				videoElement.captioned = true;
 			
 				// Check whether video element has an ID. If not, create one
 				if (videoElement.id.length === 0) {
-					videoElement.id = captionator.generateID();
+					videoElement.id = lessonator.generateID();
 				}
 			
 				var enabledDefaultTrack = false;
@@ -909,7 +905,7 @@
 					}
 				
 					var trackObject = videoElement.addTextTrack(
-											(trackElement.getAttribute("id")||captionator.generateID()),
+											(trackElement.getAttribute("id")||lessonator.generateID()),
 											trackElement.getAttribute("kind"),
 											trackElement.getAttribute("label"),
 											trackElement.getAttribute("srclang").split("-")[0],
@@ -934,7 +930,7 @@
 					if ((trackObject.kind === "subtitles" || trackObject.kind === "captions") &&
 						(defaultLanguage === trackObject.language && options.enableCaptionsByDefault)) {
 						if (!trackList.filter(function(trackObject) {
-								if ((trackObject.kind === "captions" || trackObject.kind === "subtitles") && defaultLanguage === trackObject.language && trackObject.mode === captionator.TextTrack.SHOWING) {
+								if ((trackObject.kind === "captions" || trackObject.kind === "subtitles") && defaultLanguage === trackObject.language && trackObject.mode === lessonator.TextTrack.SHOWING) {
 									return true;
 								} else {
 									return false;
@@ -951,7 +947,7 @@
 					
 					if (trackObject.kind === "chapters" && (defaultLanguage === trackObject.language)) {
 						if (!trackList.filter(function(trackObject) {
-								if (trackObject.kind === "chapters" && trackObject.mode === captionator.TextTrack.SHOWING) {
+								if (trackObject.kind === "chapters" && trackObject.mode === lessonator.TextTrack.SHOWING) {
 									return true;
 								} else {
 									return false;
@@ -967,7 +963,7 @@
 				
 					if (trackObject.kind === "descriptions" && (options.enableDescriptionsByDefault === true) && (defaultLanguage === trackObject.language)) {
 						if (!trackList.filter(function(trackObject) {
-								if (trackObject.kind === "descriptions" && trackObject.mode === captionator.TextTrack.SHOWING) {
+								if (trackObject.kind === "descriptions" && trackObject.mode === lessonator.TextTrack.SHOWING) {
 									return true;
 								} else {
 									return false;
@@ -982,8 +978,8 @@
 				
 					if (trackEnabled === true) {
 						trackList.forEach(function(trackObject) {
-							if(trackObject.trackNode.hasAttribute("default") && trackObject.mode === captionator.TextTrack.SHOWING) {
-								trackObject.mode = captionator.TextTrack.HIDDEN;
+							if(trackObject.trackNode.hasAttribute("default") && trackObject.mode === lessonator.TextTrack.SHOWING) {
+								trackObject.mode = lessonator.TextTrack.HIDDEN;
 							}
 						});
 					}
@@ -1009,7 +1005,7 @@
 					// Let the text track mode be disabled.
 				
 					if (trackEnabled === true) {
-						trackObject.mode = captionator.TextTrack.SHOWING;
+						trackObject.mode = lessonator.TextTrack.SHOWING;
 					}
 				});
 			
@@ -1024,30 +1020,30 @@
 				
 					// External renderer?
 					if (options.renderer instanceof Function) {
-						options.renderer.call(captionator,videoElement);
+						options.renderer.call(lessonator,videoElement);
 					} else {
-						captionator.rebuildCaptions(videoElement);
+						lessonator.rebuildCaptions(videoElement);
 					}
 				
-					captionator.synchroniseMediaElements(videoElement);
+					lessonator.synchroniseMediaElements(videoElement);
 				}, false);
 
 				window.addEventListener("resize", function(eventData) {
-					videoElement._captionator_dirtyBit = true; // mark video as dirty, force captionator to rerender captions
-					captionator.rebuildCaptions(videoElement);
+					videoElement._lessonator_dirtyBit = true; // mark video as dirty, force lessonator to rerender captions
+					lessonator.rebuildCaptions(videoElement);
 				},false);
 			
 				videoElement.addEventListener("play", function(eventData){
-					captionator.synchroniseMediaElements(videoElement);	
+					lessonator.synchroniseMediaElements(videoElement);	
 				},false);
 			
 				videoElement.addEventListener("pause", function(eventData){
-					captionator.synchroniseMediaElements(videoElement);	
+					lessonator.synchroniseMediaElements(videoElement);	
 				},false);
 
 				// Hires mode
 				if (options.enableHighResolution === true) {
-					window.setInterval(function captionatorHighResProcessor() {
+					window.setInterval(function lessonatorHighResProcessor() {
 						try {
 							videoElement.tracks.forEach(function(track) {
 								track.activeCues.refreshCues.apply(track.activeCues);
@@ -1056,9 +1052,9 @@
 					
 						// External renderer?
 						if (options.renderer instanceof Function) {
-							options.renderer.call(captionator,videoElement);
+							options.renderer.call(lessonator,videoElement);
 						} else {
-							captionator.rebuildCaptions(videoElement);
+							lessonator.rebuildCaptions(videoElement);
 						}
 					},20);
 				}
@@ -1067,7 +1063,7 @@
 			return videoElement;
 		},
 		/*
-			captionator.rebuildCaptions(HTMLVideoElement videoElement)
+			lessonator.rebuildCaptions(HTMLVideoElement videoElement)
 		
 			Loops through all the TextTracks for a given element and manages their display (including generation of container elements.)
 		
@@ -1080,7 +1076,7 @@
 		*/
 		"rebuildCaptions": function(videoElement) {
 			var trackList = videoElement.tracks || [];
-			var options = videoElement._captionatorOptions instanceof Object ? videoElement._captionatorOptions : {};
+			var options = videoElement._lessonatorOptions instanceof Object ? videoElement._lessonatorOptions : {};
 			var currentTime = videoElement.currentTime;
 			var compositeActiveCues = [];
 			var cuesChanged = false;
@@ -1089,7 +1085,7 @@
 
 			// Work out what cues are showing...
 			trackList.forEach(function(track,trackIndex) {
-				if (track.mode === captionator.TextTrack.SHOWING && track.readyState === captionator.TextTrack.LOADED) {
+				if (track.mode === lessonator.TextTrack.SHOWING && track.readyState === lessonator.TextTrack.LOADED) {
 					cueSortArray = [].slice.call(track.activeCues,0);
 					
 					// Do a reverse sort
@@ -1112,36 +1108,36 @@
 
 			// Determine whether cues have changed - we generate an ID based on track ID, cue ID, and text length
 			activeCueIDs = compositeActiveCues.map(function(cue) {return cue.track.id + "." + cue.id + ":" + cue.text.toString(currentTime).length;});
-			cuesChanged = !captionator.compareArray(activeCueIDs,videoElement._captionator_previousActiveCues);
+			cuesChanged = !lessonator.compareArray(activeCueIDs,videoElement._lessonator_previousActiveCues);
 		
 			// If they've changed, we re-render our cue canvas.
-			if (cuesChanged || videoElement._captionator_dirtyBit) {
+			if (cuesChanged || videoElement._lessonator_dirtyBit) {
 				// If dirty bit was set, it certainly isn't now.
-				videoElement._captionator_dirtyBit = false;
+				videoElement._lessonator_dirtyBit = false;
 
 				// Destroy internal tracking variable (which is used for caption rendering)
-				videoElement._captionator_availableCueArea = null;
+				videoElement._lessonator_availableCueArea = null;
 				
 				// Internal tracking variable to determine whether our composite active cue list for the video has changed
-				videoElement._captionator_previousActiveCues = activeCueIDs;
+				videoElement._lessonator_previousActiveCues = activeCueIDs;
 				
 				// Get the canvas ready if it isn't already
-				captionator.styleCueCanvas(videoElement);
+				lessonator.styleCueCanvas(videoElement);
 				videoElement._containerObject.innerHTML = "";
 			
 				// Now we render the cues
 				compositeActiveCues.forEach(function(cue) {
 					var cueNode = document.createElement("div");
-					cueNode.id = String(cue.id).length ? cue.id : captionator.generateID();
-					cueNode.className = "captionator-cue";
+					cueNode.id = String(cue.id).length ? cue.id : lessonator.generateID();
+					cueNode.className = "lessonator-cue";
 					cueNode.innerHTML = cue.text.toString(currentTime);
 					videoElement._containerObject.appendChild(cueNode);
-					captionator.styleCue(cueNode,cue,videoElement);
+					lessonator.styleCue(cueNode,cue,videoElement);
 				});
 			}
 		},
 		/*
-			captionator.synchroniseMediaElements(HTMLVideoElement videoElement)
+			lessonator.synchroniseMediaElements(HTMLVideoElement videoElement)
 		
 			Loops through all the MediaTracks for a given element and manages their display/audibility, synchronising them to the playback of the
 			master video element.
@@ -1158,7 +1154,7 @@
 		*/
 		"synchroniseMediaElements": function(videoElement) {
 			var trackList = videoElement.mediaTracks || [];
-			var options = videoElement._captionatorOptions instanceof Object ? videoElement._captionatorOptions : {};
+			var options = videoElement._lessonatorOptions instanceof Object ? videoElement._lessonatorOptions : {};
 			var currentTime = videoElement.currentTime;
 			var synchronisationThreshold = 0.5; // How many seconds of drift will be tolerated before resynchronisation?
 		
@@ -1184,7 +1180,7 @@
 		
 			// Work out what cues are showing...
 			trackList.forEach(function(track,trackIndex) {
-				if (track.mode === captionator.TextTrack.SHOWING && track.readyState >= captionator.TextTrack.LOADING) {
+				if (track.mode === lessonator.TextTrack.SHOWING && track.readyState >= lessonator.TextTrack.LOADING) {
 					synchroniseElement(track.mediaElement,videoElement);
 				}
 			});
@@ -1198,7 +1194,7 @@
 			}
 		},
 		/*
-			captionator.getNodeMetrics(DOMNode)
+			lessonator.getNodeMetrics(DOMNode)
 		
 			Calculates and returns a number of sizing and position metrics from a DOMNode of any variety (though this function is intended
 			to be used with HTMLVideoElements.) Returns the height of the default controls on a video based on user agent detection
@@ -1247,10 +1243,10 @@
 				} else if (UA.indexOf("safari") !== -1) {
 					controlHeight = 25;
 				}
-			} else if (DOMNode._captionatorOptions) {
-				var tmpCaptionatorOptions = DOMNode._captionatorOptions;
-				if (tmpCaptionatorOptions.controlHeight) {
-					controlHeight = parseInt(tmpCaptionatorOptions.controlHeight,10);
+			} else if (DOMNode._lessonatorOptions) {
+				var tmplessonatorOptions = DOMNode._lessonatorOptions;
+				if (tmplessonatorOptions.controlHeight) {
+					controlHeight = parseInt(tmplessonatorOptions.controlHeight,10);
 				}
 			}
 		
@@ -1263,7 +1259,7 @@
 			};
 		},
 		/*
-			captionator.applyStyles(DOMNode, Style Object)
+			lessonator.applyStyles(DOMNode, Style Object)
 		
 			A fast way to apply multiple CSS styles to a DOMNode.
 		
@@ -1285,7 +1281,7 @@
 			}
 		},
 		/*
-			captionator.checkDirection(text)
+			lessonator.checkDirection(text)
 		
 			Determines whether the text string passed into the function is an RTL (right to left) or LTR (left to right) string.
 		
@@ -1308,7 +1304,7 @@
 			return !!rtlDirCheckRe.test(text) ? 'rtl' : (!!ltrDirCheckRe.test(text) ? 'ltr' : '');
 		},
 		/*
-			captionator.styleCue(DOMNode, cueObject, videoNode)
+			lessonator.styleCue(DOMNode, cueObject, videoNode)
 		
 			Styles and positions cue nodes according to the WebVTT specification.
 		
@@ -1330,7 +1326,7 @@
 			var videoHeightInLines, videoWidthInLines, pixelLineHeight, verticalPixelLineHeight, charactersPerLine = 0, characterCount = 0;
 			var characters = 0, lineCount = 0, finalLineCharacterCount = 0, finalLineCharacterHeight = 0, currentLine = 0;
 			var characterX, characterY, characterPosition = 0;
-			var options = videoElement._captionatorOptions || {};
+			var options = videoElement._lessonatorOptions || {};
 			var videoMetrics;
 			var maxCueSize = 100, internalTextPosition = 50, textBoundingBoxWidth = 0, textBoundingBoxPercentage = 0, autoSize = true;
 			
@@ -1338,11 +1334,11 @@
 			// (sadly, all the good ones!)
 			var spanify = function(DOMNode) {
 				var stringHasLength = function(textString) { return !!textString.length; };
-				var spanCode = "<span class='captionator-cue-character'>";
+				var spanCode = "<span class='lessonator-cue-character'>";
 				var nodeIndex, currentNode, currentNodeValue, replacementFragment, characterCount = 0;
 				var styleSpan = function(span) {
 					characterCount ++;
-					captionator.applyStyles(span,{
+					lessonator.applyStyles(span,{
 						"display":		"block",
 						"lineHeight":	"auto",
 						"height":		basePixelFontSize + "px",
@@ -1368,7 +1364,7 @@
 										.join("</span>" + spanCode) +
 									"</span>";
 							
-							[].slice.call(replacementFragment.querySelectorAll("span.captionator-cue-character"),0).forEach(styleSpan);
+							[].slice.call(replacementFragment.querySelectorAll("span.lessonator-cue-character"),0).forEach(styleSpan);
 							
 							currentNode.parentNode.replaceChild(replacementFragment,currentNode);
 						} else if (DOMNode.childNodes[nodeIndex].nodeType === 1) {
@@ -1381,7 +1377,7 @@
 			};
 
 			// Set up the cue canvas
-			videoMetrics = captionator.getNodeMetrics(videoElement);
+			videoMetrics = lessonator.getNodeMetrics(videoElement);
 			
 			// Define storage for the available cue area, diminished as further cues are added
 			// Cues occupy the largest possible area they can, either by width or height
@@ -1390,8 +1386,8 @@
 			// It is the subtitle author's responsibility to ensure they don't overlap if
 			// they decide to override default positioning!
 			
-			if (!videoElement._captionator_availableCueArea) {
-				videoElement._captionator_availableCueArea = {
+			if (!videoElement._lessonator_availableCueArea) {
+				videoElement._lessonator_availableCueArea = {
 					"bottom": (videoMetrics.height-videoMetrics.controlHeight),
 					"right": videoMetrics.width,
 					"top": 0,
@@ -1404,7 +1400,7 @@
 			if (cueObject.direction === "horizontal") {
 				// Calculate text bounding box
 				// (isn't useful for vertical cues, because we're doing all glyph positioning ourselves.)
-				captionator.applyStyles(DOMNode,{
+				lessonator.applyStyles(DOMNode,{
 					"width": "auto",
 					"position": "static",
 					"display": "inline-block",
@@ -1412,7 +1408,7 @@
 				});
 
 				textBoundingBoxWidth = parseInt(DOMNode.offsetWidth,10);
-				textBoundingBoxPercentage = Math.floor((textBoundingBoxWidth / videoElement._captionator_availableCueArea.width) * 100);
+				textBoundingBoxPercentage = Math.floor((textBoundingBoxWidth / videoElement._lessonator_availableCueArea.width) * 100);
 				textBoundingBoxPercentage = textBoundingBoxPercentage <= 100 ? textBoundingBoxPercentage : 100;
 			}
 
@@ -1435,13 +1431,13 @@
 			}
 			
 			// Calculate render area height & width in lines
-			videoHeightInLines = Math.floor(videoElement._captionator_availableCueArea.height / pixelLineHeight);
-			videoWidthInLines = Math.floor(videoElement._captionator_availableCueArea.width / verticalPixelLineHeight);
+			videoHeightInLines = Math.floor(videoElement._lessonator_availableCueArea.height / pixelLineHeight);
+			videoWidthInLines = Math.floor(videoElement._lessonator_availableCueArea.width / verticalPixelLineHeight);
 			
 			// Calculate cue size and padding
 			if (parseFloat(String(cueObject.size).replace(/[^\d\.]/ig,"")) === 0) {
 				// We assume (given a size of 0) that no explicit size was set.
-				// Depending on settings, we either use the WebVTT default size of 100% (the Captionator.js default behaviour),
+				// Depending on settings, we either use the WebVTT default size of 100% (the lessonator.js default behaviour),
 				// or the proportion of the video the text bounding box takes up (widthwise) as a percentage (proposed behaviour, LeanBack's default)
 				if (options.sizeCuesByTextBoundingBox === true) {
 					cueSize = textBoundingBoxPercentage;
@@ -1480,20 +1476,20 @@
 				}
 
 				if (cueObject.snapToLines === true) {
-					cueWidth = videoElement._captionator_availableCueArea.width * (cueSize/100);
+					cueWidth = videoElement._lessonator_availableCueArea.width * (cueSize/100);
 				} else {
 					cueWidth = videoMetrics.width * (cueSize/100);
 				}
 
 				if (cueObject.textPosition === "auto") {
-					cueX = ((videoElement._captionator_availableCueArea.right - cueWidth) / 2) + videoElement._captionator_availableCueArea.left;
+					cueX = ((videoElement._lessonator_availableCueArea.right - cueWidth) / 2) + videoElement._lessonator_availableCueArea.left;
 				} else {
 					internalTextPosition = parseFloat(String(cueObject.textPosition).replace(/[^\d\.]/ig,""));
-					cueX = ((videoElement._captionator_availableCueArea.right - cueWidth) * (internalTextPosition/100)) + videoElement._captionator_availableCueArea.left;
+					cueX = ((videoElement._lessonator_availableCueArea.right - cueWidth) * (internalTextPosition/100)) + videoElement._lessonator_availableCueArea.left;
 				}
 				
 				if (cueObject.snapToLines === true) {
-					cueY = ((videoHeightInLines-1) * pixelLineHeight) + videoElement._captionator_availableCueArea.top;
+					cueY = ((videoHeightInLines-1) * pixelLineHeight) + videoElement._lessonator_availableCueArea.top;
 				} else {
 					tmpHeightExclusions = videoMetrics.controlHeight + pixelLineHeight + (cuePaddingTB*2);
 					cueY = (videoMetrics.height - tmpHeightExclusions) * (cueObject.linePosition/100);
@@ -1501,14 +1497,14 @@
 				
 			} else {
 				// Basic positioning
-				cueY = videoElement._captionator_availableCueArea.top;
-				cueX = videoElement._captionator_availableCueArea.right - verticalPixelLineHeight;
+				cueY = videoElement._lessonator_availableCueArea.top;
+				cueX = videoElement._lessonator_availableCueArea.right - verticalPixelLineHeight;
 				cueWidth = verticalPixelLineHeight;
-				cueHeight = videoElement._captionator_availableCueArea.height * (cueSize/100);
+				cueHeight = videoElement._lessonator_availableCueArea.height * (cueSize/100);
 				
 				// Split into characters, and continue calculating width & positioning with new info
 				characterCount = spanify(DOMNode);
-				characters = [].slice.call(DOMNode.querySelectorAll("span.captionator-cue-character"),0);
+				characters = [].slice.call(DOMNode.querySelectorAll("span.lessonator-cue-character"),0);
 				charactersPerLine = Math.floor((cueHeight-cuePaddingTB*2)/basePixelFontSize);
 				cueWidth = Math.ceil(characterCount/charactersPerLine) * verticalPixelLineHeight;
 				lineCount = Math.ceil(characterCount/charactersPerLine);
@@ -1517,7 +1513,7 @@
 				
 				// Work out CueX taking into account linePosition...
 				if (cueObject.snapToLines === true) {
-					cueX = cueObject.direction === "vertical-lr" ? videoElement._captionator_availableCueArea.left : videoElement._captionator_availableCueArea.right - cueWidth;
+					cueX = cueObject.direction === "vertical-lr" ? videoElement._lessonator_availableCueArea.left : videoElement._lessonator_availableCueArea.right - cueWidth;
 				} else {
 					var temporaryWidthExclusions = cueWidth + (cuePaddingLR * 2);
 					if (cueObject.direction === "vertical-lr") {
@@ -1529,11 +1525,11 @@
 				
 				// Work out CueY taking into account textPosition...
 				if (cueObject.textPosition === "auto") {
-					cueY = ((videoElement._captionator_availableCueArea.bottom - cueHeight) / 2) + videoElement._captionator_availableCueArea.top;
+					cueY = ((videoElement._lessonator_availableCueArea.bottom - cueHeight) / 2) + videoElement._lessonator_availableCueArea.top;
 				} else {
 					cueObject.textPosition = parseFloat(String(cueObject.textPosition).replace(/[^\d\.]/ig,""));
-					cueY = ((videoElement._captionator_availableCueArea.bottom - cueHeight) * (cueObject.textPosition/100)) + 
-							videoElement._captionator_availableCueArea.top;
+					cueY = ((videoElement._lessonator_availableCueArea.bottom - cueHeight) * (cueObject.textPosition/100)) + 
+							videoElement._lessonator_availableCueArea.top;
 				}
 				
 				
@@ -1558,7 +1554,7 @@
 						characterY = (((cueHeight - (cuePaddingTB*2))-finalLineCharacterHeight)/2) + (characterPosition * basePixelFontSize);
 					}
 					
-					captionator.applyStyles(characterSpan,{
+					lessonator.applyStyles(characterSpan,{
 						"position": "absolute",
 						"top": characterY + "px",
 						"left": characterX + "px"
@@ -1574,14 +1570,14 @@
 			}
 			
 			if (cueObject.direction === "horizontal") {
-				if (captionator.checkDirection(String(cueObject.text)) === "rtl") {
+				if (lessonator.checkDirection(String(cueObject.text)) === "rtl") {
 					cueAlignment = {"start":"right","middle":"center","end":"left"}[cueObject.alignment];
 				} else {	
 					cueAlignment = {"start":"left","middle":"center","end":"right"}[cueObject.alignment];
 				}
 			}
 
-			captionator.applyStyles(DOMNode,{
+			lessonator.applyStyles(DOMNode,{
 				"position": "absolute",
 				"overflow": "hidden",
 				"width": cueWidth + "px",
@@ -1591,7 +1587,7 @@
 				"padding": cuePaddingTB + "px " + cuePaddingLR + "px",
 				"textAlign": cueAlignment,
 				"backgroundColor": "rgba(" + cueBackgroundColour.join(",") + ")",
-				"direction": captionator.checkDirection(String(cueObject.text)),
+				"direction": lessonator.checkDirection(String(cueObject.text)),
 				"lineHeight": baseLineHeight + "pt",
 				"boxSizing": "border-box"
 			});
@@ -1600,17 +1596,17 @@
 				// Work out how to shrink the available render area
 				// If subtracting from the right works out to a larger area, subtract from the right.
 				// Otherwise, subtract from the left.	
-				if (((cueX - videoElement._captionator_availableCueArea.left) - videoElement._captionator_availableCueArea.left) >=
-					(videoElement._captionator_availableCueArea.right - (cueX + cueWidth))) {
+				if (((cueX - videoElement._lessonator_availableCueArea.left) - videoElement._lessonator_availableCueArea.left) >=
+					(videoElement._lessonator_availableCueArea.right - (cueX + cueWidth))) {
 					
-					videoElement._captionator_availableCueArea.right = cueX;
+					videoElement._lessonator_availableCueArea.right = cueX;
 				} else {
-					videoElement._captionator_availableCueArea.left = cueX + cueWidth;
+					videoElement._lessonator_availableCueArea.left = cueX + cueWidth;
 				}
 				
-				videoElement._captionator_availableCueArea.width =
-					videoElement._captionator_availableCueArea.right - 
-					videoElement._captionator_availableCueArea.left;
+				videoElement._lessonator_availableCueArea.width =
+					videoElement._lessonator_availableCueArea.right - 
+					videoElement._lessonator_availableCueArea.left;
 				
 			} else {
 				// Now shift cue up if required to ensure it's all visible
@@ -1641,39 +1637,39 @@
 				// Work out how to shrink the available render area
 				// If subtracting from the bottom works out to a larger area, subtract from the bottom.
 				// Otherwise, subtract from the top.
-				if (((cueY - videoElement._captionator_availableCueArea.top) - videoElement._captionator_availableCueArea.top) >=
-					(videoElement._captionator_availableCueArea.bottom - (cueY + cueHeight)) &&
-					videoElement._captionator_availableCueArea.bottom > cueY) {
+				if (((cueY - videoElement._lessonator_availableCueArea.top) - videoElement._lessonator_availableCueArea.top) >=
+					(videoElement._lessonator_availableCueArea.bottom - (cueY + cueHeight)) &&
+					videoElement._lessonator_availableCueArea.bottom > cueY) {
 					
-					videoElement._captionator_availableCueArea.bottom = cueY;
+					videoElement._lessonator_availableCueArea.bottom = cueY;
 				} else {
-					if (videoElement._captionator_availableCueArea.top < cueY + cueHeight) {
-						videoElement._captionator_availableCueArea.top = cueY + cueHeight;
+					if (videoElement._lessonator_availableCueArea.top < cueY + cueHeight) {
+						videoElement._lessonator_availableCueArea.top = cueY + cueHeight;
 					}
 				}
 				
-				videoElement._captionator_availableCueArea.height =
-					videoElement._captionator_availableCueArea.bottom - 
-					videoElement._captionator_availableCueArea.top;
+				videoElement._lessonator_availableCueArea.height =
+					videoElement._lessonator_availableCueArea.bottom - 
+					videoElement._lessonator_availableCueArea.top;
 			}
 			
 			// DEBUG FUNCTIONS
 			// This function can be used for debugging WebVTT captions. It will not be
-			// included in production versions of Captionator.
+			// included in production versions of lessonator.
 			// -----------------------------------------------------------------------
 			if (options.debugMode) {
 				var debugCanvas, debugContext;
 				var generateDebugCanvas = function() {
 					if (!debugCanvas) {
-						if (videoElement._captionatorDebugCanvas) {
-							debugCanvas = videoElement._captionatorDebugCanvas;
-							debugContext = videoElement._captionatorDebugContext;
+						if (videoElement._lessonatorDebugCanvas) {
+							debugCanvas = videoElement._lessonatorDebugCanvas;
+							debugContext = videoElement._lessonatorDebugContext;
 						} else {
 							debugCanvas = document.createElement("canvas");
 							debugCanvas.setAttribute("width",videoMetrics.width);
 							debugCanvas.setAttribute("height",videoMetrics.height - videoMetrics.controlHeight);
 							document.body.appendChild(debugCanvas);
-							captionator.applyStyles(debugCanvas,{
+							lessonator.applyStyles(debugCanvas,{
 								"position": "absolute",
 								"top": videoMetrics.top + "px",
 								"left": videoMetrics.left + "px",
@@ -1683,8 +1679,8 @@
 							});
 					
 							debugContext = debugCanvas.getContext("2d");
-							videoElement._captionatorDebugCanvas = debugCanvas;
-							videoElement._captionatorDebugContext = debugContext;
+							videoElement._lessonatorDebugCanvas = debugCanvas;
+							videoElement._lessonatorDebugContext = debugContext;
 						}
 					}
 				};
@@ -1745,10 +1741,10 @@
 					debugContext.fillStyle = "rgba(100,100,255,0.5)";
 					
 					debugContext.fillRect(
-							videoElement._captionator_availableCueArea.left,
-							videoElement._captionator_availableCueArea.top,
-							videoElement._captionator_availableCueArea.right,
-							videoElement._captionator_availableCueArea.bottom);
+							videoElement._lessonator_availableCueArea.left,
+							videoElement._lessonator_availableCueArea.top,
+							videoElement._lessonator_availableCueArea.right,
+							videoElement._lessonator_availableCueArea.bottom);
 					debugContext.stroke();
 					
 				};
@@ -1760,7 +1756,7 @@
 			// END DEBUG FUNCTIONS
 		},
 		/*
-			captionator.styleCueCanvas(VideoNode)
+			lessonator.styleCueCanvas(VideoNode)
 		
 			Styles and positions a canvas (not a <canvas> object - just a div) for displaying cues on a video.
 			If the HTMLVideoElement in question does not have a canvas, one is created for it.
@@ -1776,7 +1772,7 @@
 			var baseFontSize, baseLineHeight;
 			var containerObject;
 			var containerID;
-			var options = videoElement._captionatorOptions instanceof Object ? videoElement._captionatorOptions : {};
+			var options = videoElement._lessonatorOptions instanceof Object ? videoElement._lessonatorOptions : {};
 		
 			if (!(videoElement instanceof HTMLVideoElement)) {
 				throw new Error("Cannot style a cue canvas for a non-video node!");
@@ -1790,8 +1786,8 @@
 			if (!containerObject) {
 				// visually display captions
 				containerObject = document.createElement("div");
-				containerObject.className = "captionator-cue-canvas";
-				containerID = captionator.generateID();
+				containerObject.className = "lessonator-cue-canvas";
+				containerID = lessonator.generateID();
 				containerObject.id = containerID;
 				
 				// We can choose to append the canvas to an element other than the body.
@@ -1842,7 +1838,7 @@
 			}
 		
 			// Set up the cue canvas
-			var videoMetrics = captionator.getNodeMetrics(videoElement);
+			var videoMetrics = lessonator.getNodeMetrics(videoElement);
 		
 			// Set up font metrics
 			baseFontSize = ((videoMetrics.height * (fontSizeVerticalPercentage/100))/96)*72;
@@ -1851,7 +1847,7 @@
 			baseLineHeight = baseLineHeight > minimumLineHeight ? baseLineHeight : minimumLineHeight;
 		
 			// Style node!
-			captionator.applyStyles(containerObject,{
+			lessonator.applyStyles(containerObject,{
 				"position": "absolute",
 				"overflow": "hidden",
 				"zIndex": 100,
@@ -1873,7 +1869,7 @@
 			}
 		},
 		/*
-			captionator.parseCaptions(string captionData, object options)
+			lessonator.parseCaptions(string captionData, object options)
 		
 			Accepts and parses SRT caption/subtitle data. Will extend for WebVTT shortly. Perhaps non-JSON WebVTT will work already?
 			This function has been intended from the start to (hopefully) loosely parse both. I'll patch it as required.
@@ -1881,7 +1877,7 @@
 			First parameter: Entire text data (UTF-8) of the retrieved SRT/WebVTT file. This parameter is mandatory. (really - what did
 			you expect it was going to do without it!)
 
-			Second parameter: Captionator internal options object. See the documentation for allowed values.
+			Second parameter: lessonator internal options object. See the documentation for allowed values.
 		
 			RETURNS:
 		
@@ -1909,7 +1905,7 @@
 			if (captionData) {
 				// This function parses and validates cue HTML/VTT tokens, and converts them into something understandable to the renderer.
 				var processCaptionHTML = function processCaptionHTML(inputHTML) {
-					var cueStructure = new captionator.CaptionatorCueStructure(inputHTML,options),
+					var cueStructure = new lessonator.lessonatorCueStructure(inputHTML,options),
 						cueSplit = [],
 						splitIndex,
 						currentToken,
@@ -2130,7 +2126,7 @@
 					
 					// The remaining lines are the subtitle payload itself (after removing an ID if present, and the time);
 					html = options.processCueHTML === false ? subtitleParts.join("\n") : processCaptionHTML(subtitleParts.join("\n"));
-					tmpCue = new captionator.TextTrackCue(id, timeIn, timeOut, html, cueSettings, false, null);
+					tmpCue = new lessonator.TextTrackCue(id, timeIn, timeOut, html, cueSettings, false, null);
 					tmpCue.styleData = cueStyles;
 					return tmpCue;
 				};
@@ -2177,5 +2173,5 @@
 		}
 	};
 	
-	window.captionator = captionator;
+	window.lessonator = lessonator;
 })();
