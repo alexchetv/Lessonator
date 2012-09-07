@@ -1,0 +1,25 @@
+<html>
+<head>
+<script type="text/javascript" src="captionator-min.js"></script>
+	<script type="text/javascript">
+    window.addEventListener("load",function(eventData) {
+        captionator.captionify();
+		//document.getElementById("ve").tracks[0].mode=2;
+		document.getElementById('ve').tracks[0].onload = function(eventData) {
+			console.log(["Not Loaded","Loading","Loaded","Error"][document.getElementById('ve').tracks[0].readyState]);
+			console.log(["Not Showing","Hidden","Showing"][document.getElementById('ve').tracks[0].mode]);
+			console.log(document.getElementById('ve').tracks[0].cues[0]);
+		};
+		document.getElementById('ve').tracks[0].onerror = document.getElementById('ve').tracks[0].onload; 	
+    });
+</script>
+</head>
+<body>
+	<video controls="" name="media" id='ve'>
+		<source src="http://dl.dropbox.com/u/102020969/SP613.webm" type="video/webm">
+		<track src="test2.vtt" label="English subtitles" kind="subtitles" srclang="en" default></track>
+	</video>
+	
+<input type="checkbox" onchange="document.getElementById('ve').tracks[0].mode = [0,2][Number(this.checked)];">
+</body>
+</html>

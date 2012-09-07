@@ -1,0 +1,109 @@
+<html>
+<head>
+<script type="text/javascript" src="captionator.js"></script>
+	<script type="text/javascript">
+    window.addEventListener("load",function(eventData) {
+        captionator.captionify(null,null,{enableHighResolution:true});
+		//document.getElementById("ve").tracks[0].mode=2;
+		document.getElementById('ve').tracks[0].onload = function(eventData) {
+			console.log(["Not Loaded","Loading","Loaded","Error"][document.getElementById('ve').tracks[0].readyState]);
+			console.log(["Not Showing","Hidden","Showing"][document.getElementById('ve').tracks[0].mode]);
+			//console.log(document.getElementById('ve').tracks[0].cues.length);
+			processTrack(document.getElementById('ve').tracks[0].trackNode);
+		};
+		document.getElementById('ve').tracks[0].onerror = document.getElementById('ve').tracks[0].onload; 	
+    });
+</script>
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.8.0.min.js"></script>
+<script type="text/javascript">
+/*function getBufferedRange() {
+        var range = '-';
+        if(video.buffered.length) {
+            range = '';
+            for (var i=0; i<video.buffered.length; i++) { 
+                range += Math.round(video.buffered.start(i)) +  "s-" +
+                    Math.round(video.buffered.end(i)) + "s";
+                if(i<video.buffered.length-1) { range +=", "; }
+            }
+        }
+        return range;
+    };
+
+function eventProgress() {
+
+            //console.log("Progress event fired (buffered="+getBufferedRange()+")");
+
+    };*/
+function processTrack(trackElement) {
+	window.textTrack = trackElement.track;
+	console.log(window.textTrack.cues.length);
+	console.log(trackElement);
+	for (var j = 0; j < window.textTrack.cues.length; ++j) {
+	//for (var j = 100; j < 130; ++j) {
+		var cue = window.textTrack.cues[j];
+		console.log(cue.id+'    '+cue.text);
+		window.textTrack.cues[j].pauseOnExit = true;
+		var option = document.createElement("option");
+		option.text = cue.text;
+		option.setAttribute('cueId', cue.id);
+		option.setAttribute('start', cue.startTime);
+		option.setAttribute('end', cue.endTime);
+		document.getElementById('phrases').add(option);
+	}	
+	/*trackElement.addEventListener("cuechange", function() {
+        var myCues = window.SStrack.activeCues;   // activeCues is an array of current cues.
+              if (myCues.length) {console.log(myCues[0].startTime + '   ' +myCues[0].endTime + '   ' +myCues[0].id + '   ' +myCues[0].text);}
+	});*/
+	window.SStrack = video.tracks[1].trackNode.track;
+	window.textTrack.mode=0;
+	window.SStrack.mode=2;
+	console.log(window.SStrack.cues[0]);
+	//window.SStrack.addCue(new TextTrackCue('testid',0,10,'test'));
+	window.SStrack.onload = function(eventData) {
+		//window.SStrack.cues[0].pauseOnExit = true;
+		window.SStrack.cues[0].onexit = function(eventData) {
+			video.pause();
+		};
+	}
+
+	
+}
+
+function playCaption(control) 
+{
+    var o = control.options[control.options.selectedIndex];
+    //var cid = o.getAttribute('cueId');
+	
+	
+	//window.textTrack.mode=1;
+	//window.SStrack.removeCue(window.SStrack.cues[0]);
+	//var tCue = window.textTrack.cues[control.options.selectedIndex];
+	window.SStrack.cues[0].startTime = o.getAttribute('start');
+	window.SStrack.cues[0].endTime = o.getAttribute('end');
+	window.SStrack.cues[0].id = o.getAttribute('cueId');
+	window.SStrack.cues[0].text = o.text;
+	console.log(window.SStrack.cues[0].startTime + '   ' +window.SStrack.cues[0].endTime + '   ' +window.SStrack.cues[0].id + '   ' +window.SStrack.cues[0].pauseOnExit);
+	video.currentTime = window.SStrack.cues[0].startTime;
+	
+	video.play();
+	
+	//window.SStrack.addCue(new TextTrackCue('dog bark', 12.783, 13.612, '', '', '', true));
+}
+
+</script>
+</head>
+<body>
+	<video name="media" id='ve'>
+		<source src="http://dl.dropbox.com/u/102020969/SP613.webm" type="video/webm">
+		<track src="test2.vtt" label="English subtitles" kind="subtitles" srclang="en" default></track>
+		<track src="1.vtt" label="startstop" kind="metadata" srclang="en"></track>
+	</video>
+	<div>
+        <select size='10' id='phrases' onchange='playCaption(this)' style='width:500px;height:500px;margin-top:8px' ></select>
+    </div>
+<script type="text/javascript">
+var video = document.getElementById('ve');
+//video.addEventListener('progress',eventProgress);
+</script>
+</body>
+</html>
