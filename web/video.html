@@ -3,15 +3,15 @@
 <script type="text/javascript" src="lessonator.js"></script>
 	<script type="text/javascript">
     window.addEventListener("load",function(eventData) {
-        lessonator.captionify(null,null,{enableHighResolution:true});
-		//document.getElementById("ve").tracks[0].mode=2;
-		document.getElementById('ve').tracks[0].onload = function(eventData) {
-			console.log(["Not Loaded","Loading","Loaded","Error"][document.getElementById('ve').tracks[0].readyState]);
-			console.log(["Not Showing","Hidden","Showing"][document.getElementById('ve').tracks[0].mode]);
-			//console.log(document.getElementById('ve').tracks[0].cues.length);
-			processTrack(document.getElementById('ve').tracks[0].trackNode);
+        lessonator.lessonify();
+		//document.getElementById("ve").lsns[0].mode=2;
+		document.getElementById('ve').lsns[0].onload = function(eventData) {
+			console.log(["Not Loaded","Loading","Loaded","Error"][document.getElementById('ve').lsns[0].readyState]);
+			console.log(["Not Showing","Hidden","Showing"][document.getElementById('ve').lsns[0].mode]);
+			//console.log(document.getElementById('ve').lsns[0].phrases.length);
+			processLsn(document.getElementById('ve').lsns[0].lsnNode);
 		};
-		document.getElementById('ve').tracks[0].onerror = document.getElementById('ve').tracks[0].onload; 	
+		document.getElementById('ve').lsns[0].onerror = document.getElementById('ve').lsns[0].onload; 	
     });
 </script>
 <script type="text/javascript" src="http://code.jquery.com/jquery-1.8.0.min.js"></script>
@@ -34,34 +34,34 @@ function eventProgress() {
             //console.log("Progress event fired (buffered="+getBufferedRange()+")");
 
     };*/
-function processTrack(trackElement) {
-	window.textTrack = trackElement.track;
-	console.log(window.textTrack.cues.length);
-	console.log(trackElement);
-	for (var j = 0; j < window.textTrack.cues.length; ++j) {
+function processLsn(lsnElement) {
+	window.textLsn = lsnElement.lsn;
+	console.log(window.textLsn.phrases.length);
+	console.log(lsnElement);
+	for (var j = 0; j < window.textLsn.phrases.length; ++j) {
 	//for (var j = 100; j < 130; ++j) {
-		var cue = window.textTrack.cues[j];
-		console.log(cue.id+'    '+cue.text);
-		window.textTrack.cues[j].pauseOnExit = true;
+		var phrase = window.textLsn.phrases[j];
+		console.log(phrase.id+'    '+phrase.text);
+		window.textLsn.phrases[j].pauseOnExit = true;
 		var option = document.createElement("option");
-		option.text = cue.text;
-		option.setAttribute('cueId', cue.id);
-		option.setAttribute('start', cue.startTime);
-		option.setAttribute('end', cue.endTime);
+		option.text = phrase.text;
+		option.setAttribute('phraseId', phrase.id);
+		option.setAttribute('start', phrase.startTime);
+		option.setAttribute('end', phrase.endTime);
 		document.getElementById('phrases').add(option);
 	}	
-	/*trackElement.addEventListener("cuechange", function() {
-        var myCues = window.SStrack.activeCues;   // activeCues is an array of current cues.
-              if (myCues.length) {console.log(myCues[0].startTime + '   ' +myCues[0].endTime + '   ' +myCues[0].id + '   ' +myCues[0].text);}
+	/*lsnElement.addEventListener("phrasechange", function() {
+        var myPhrases = window.SSlsn.activePhrases;   // activePhrases is an array of current phrases.
+              if (myPhrases.length) {console.log(myPhrases[0].startTime + '   ' +myPhrases[0].endTime + '   ' +myPhrases[0].id + '   ' +myPhrases[0].text);}
 	});*/
-	window.SStrack = video.tracks[1].trackNode.track;
-	window.textTrack.mode=0;
-	window.SStrack.mode=2;
-	console.log(window.SStrack.cues[0]);
-	//window.SStrack.addCue(new TextTrackCue('testid',0,10,'test'));
-	window.SStrack.onload = function(eventData) {
-		//window.SStrack.cues[0].pauseOnExit = true;
-		window.SStrack.cues[0].onexit = function(eventData) {
+	window.SSlsn = video.lsns[1].lsnNode.lsn;
+	window.textLsn.mode=0;
+	window.SSlsn.mode=2;
+	console.log(window.SSlsn.phrases[0]);
+	//window.SSlsn.addPhrase(new TextLsnPhrase('testid',0,10,'test'));
+	window.SSlsn.onload = function(eventData) {
+		//window.SSlsn.phrases[0].pauseOnExit = true;
+		window.SSlsn.phrases[0].onexit = function(eventData) {
 			video.pause();
 		};
 	}
@@ -72,22 +72,22 @@ function processTrack(trackElement) {
 function playCaption(control) 
 {
     var o = control.options[control.options.selectedIndex];
-    //var cid = o.getAttribute('cueId');
+    //var cid = o.getAttribute('phraseId');
 	
 	
-	//window.textTrack.mode=1;
-	//window.SStrack.removeCue(window.SStrack.cues[0]);
-	//var tCue = window.textTrack.cues[control.options.selectedIndex];
-	window.SStrack.cues[0].startTime = o.getAttribute('start');
-	window.SStrack.cues[0].endTime = o.getAttribute('end');
-	window.SStrack.cues[0].id = o.getAttribute('cueId');
-	window.SStrack.cues[0].text = o.text;
-	console.log(window.SStrack.cues[0].startTime + '   ' +window.SStrack.cues[0].endTime + '   ' +window.SStrack.cues[0].id + '   ' +window.SStrack.cues[0].pauseOnExit);
-	video.currentTime = window.SStrack.cues[0].startTime;
+	//window.textLsn.mode=1;
+	//window.SSlsn.removePhrase(window.SSlsn.phrases[0]);
+	//var tPhrase = window.textLsn.phrases[control.options.selectedIndex];
+	window.SSlsn.phrases[0].startTime = o.getAttribute('start');
+	window.SSlsn.phrases[0].endTime = o.getAttribute('end');
+	window.SSlsn.phrases[0].id = o.getAttribute('phraseId');
+	window.SSlsn.phrases[0].text = o.text;
+	console.log(window.SSlsn.phrases[0].startTime + '   ' +window.SSlsn.phrases[0].endTime + '   ' +window.SSlsn.phrases[0].id + '   ' +window.SSlsn.phrases[0].pauseOnExit);
+	video.currentTime = window.SSlsn.phrases[0].startTime;
 	
 	video.play();
 	
-	//window.SStrack.addCue(new TextTrackCue('dog bark', 12.783, 13.612, '', '', '', true));
+	//window.SSlsn.addPhrase(new TextLsnPhrase('dog bark', 12.783, 13.612, '', '', '', true));
 }
 
 </script>
@@ -95,8 +95,8 @@ function playCaption(control)
 <body>
 	<video name="media" id='ve'>
 		<source src="http://dl.dropbox.com/u/102020969/SP613.webm" type="video/webm">
-		<track src="test2.vtt" label="English subtitles" kind="subtitles" srclang="en" default></track>
-		<track src="1.vtt" label="startstop" kind="metadata" srclang="en"></track>
+		<lsn src="test2.vtt" label="English subtitles" kind="subtitles" srclang="en" default></lsn>
+		<lsn src="1.vtt" label="startstop" kind="metadata" srclang="en"></lsn>
 	</video>
 	<div>
         <select size='10' id='phrases' onchange='playCaption(this)' style='width:500px;height:500px;margin-top:8px' ></select>
